@@ -1,0 +1,32 @@
+{
+	"compilerOptions": {
+		"allowUnreachableCode": false,
+		"allowUnusedLabels": false,
+		"baseUrl": "./src",
+		"emitDecoratorMetadata": true,
+		"esModuleInterop": true,
+		"experimentalDecorators": true,
+		"forceConsistentCasingInFileNames": true,
+		"lib": ["ES2021"],
+		// TODO set esnext after delete module-alias
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"noEmitOnError": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		//"noPropertyAccessFromIndexSignature": true,
+		"noUncheckedIndexedAccess": true,
+		//"noUnusedLocals": true,
+		//"noUnusedParameters": true,
+		"outDir": "./build",
+		"removeComments": true,
+		"resolveJsonModule": true,
+		"rootDir": "src",
+		"sourceMap": true,
+		//"strict": true,
+		"target": "ES2021",
+		"types": ["node"]
+	},
+	"include": ["./src/**/*.ts"],
+	"exclude": ["node_modules", "plugins", "build", "tets"]
+}

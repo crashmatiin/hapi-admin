@@ -1,0 +1,75 @@
+image: python:3.8.2
+
+definitions:
+  steps:
+    - step: &build
+        name: Build
+        image: node:14.17
+        script:
+          - node --version
+          - npm --version
+          - npm install -g typescript
+          - npm install
+          - npm run build
+
+  deploy-script: &deploy
+    caches:
+      - pip
+    script:
+      - MESSAGE=`git log --format=%B -n 1 $BITBUCKET_COMMIT` # getting commit message
+      - apt update
+      - apt install -y rsync
+      - pip3 install ansible==2.9.8
+      - chmod 700 ci-scripts
+      - cd ci-scripts
+      # run update playbook
+      - ansible-playbook -i "$HOST" -e "ansible_user=$USER \
+        backend_bin=$backend_bin \
+        SERVER_HOST=$SERVER_HOST \
+        SERVER_PORT=$SERVER_PORT \
+        DOMAIN_NAME=$DOMAIN_NAME \
+        AUTH_JWT_ACCESS_SECRET=$AUTH_JWT_ACCESS_SECRET \
+        AUTH_JWT_REFRESH_SECRET=$AUTH_JWT_REFRESH_SECRET \
+        AUTH_JWT_FILESERVICE_SECRET=$AUTH_JWT_FILESERVICE_SECRET \
+        AUTH_JWT_FILESERVICELINK_SECRET=$AUTH_JWT_FILESERVICELINK_SECRET \
+        CORS_ORIGINS=$CORS_ORIGINS \
+        CORS_HEADERS=$CORS_HEADERS \
+        CORS_METHODS=$CORS_METHODS \
+        DATABASE_LINK=$DATABASE_LINK \
+        DATABASE_HOST=$DATABASE_HOST \
+        DATABASE_PORT=$DATABASE_PORT \
+        DATABASE_USERNAME=$DATABASE_USERNAME \
+        DATABASE_PASSWORD=$DATABASE_PASSWORD \
+        DATABASE_NAME=$DATABASE_NAME \
+        FILE_SERVICE_URL=$FILE_SERVICE_URL \
+        RABBIT_MQ_URL=$RABBIT_MQ_URL \
+        DEBUG=$DEBUG \
+        NODE_ENV=$NODE_ENV \
+        SERVICE_NAME=$SERVICE_NAME \
+        SRC_DIR=$BITBUCKET_CLONE_DIR/" backend-update.yml
+
+pipelines:
+  branches:
+    master:
+      - step:
+          <<: *build
+      - step:
+          name: Deploy
+          deployment: Production
+          <<: *deploy
+
+    staging:
+      - step:
+          <<: *build
+      - step:
+          name: Deploy
+          deployment: Staging
+          <<: *deploy
+
+    develop:
+      - step:
+          <<: *build
+      - step:
+          name: Deploy
+          deployment: Test
+          <<: *deploy

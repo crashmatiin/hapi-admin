@@ -1,0 +1,77 @@
+---
+# tasks file for backend-update
+- name: Stop backend process
+  shell: pm2 stop {{ SERVICE_NAME }}
+  ignore_errors: yes
+
+- name: Delete backend dir
+  file:
+    path: '{{ backend_bin }}'
+    state: absent
+
+- name: Create backend dir
+  file:
+    path: '{{ backend_bin }}'
+    state: directory
+    recurse: yes
+
+- debug: var=SRC_DIR
+
+- name: Upload backend files
+  synchronize:
+    src: '{{ SRC_DIR }}'
+    dest: '{{ backend_bin }}'
+  register: copyfiles
+
+- name: Install "typescript" node.js package globally.
+  npm:
+    name: typescript
+    global: yes
+  become: yes
+
+- name: Install packages based on package.json
+  shell: npm install
+  args:
+    chdir: '{{ backend_bin }}'
+
+- name: Build code
+  shell: npm run build
+  args:
+    chdir: '{{ backend_bin }}'
+
+- name: Copy or generate env file
+  template:
+    src: ./{{ backend_env }}.j2
+    dest: '{{ backend_bin }}/{{ backend_env }}'
+
+- name: Copy or generate app.json
+  template:
+    src: ./app.json.j2
+    dest: '{{ backend_bin }}/app.json'
+
+- name: Copy or generate database.json file
+  template:
+    src: ./db_config.json.j2
+    dest: '{{ backend_bin }}/db_config.json'
+
+- name: Migration Database
+  shell: npx sequelize-cli db:migrate
+  args:
+    chdir: '{{ backend_bin }}'
+  ignore_errors: yes
+
+- name: Seed Database
+  shell: npx sequelize-cli db:seed:all
+  args:
+    chdir: '{{ backend_bin }}'
+  ignore_errors: yes
+
+- name: Start backend process
+  shell: pm2 start app.json
+  args:
+    chdir: '{{ backend_bin }}'
+
+- name: Saving current process list
+  shell: pm2 save
+  args:
+    chdir: '{{ backend_bin }}'
